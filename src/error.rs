@@ -36,7 +36,7 @@ impl Error {
         Self { kind, position }
     }
 
-    pub fn with_source(&self, source: Source) -> ErrorWithSource {
+    pub fn with_source<'a>(&'a self, source: &'a Source) -> ErrorWithSource {
         ErrorWithSource {
             error: self,
             source,
@@ -46,7 +46,7 @@ impl Error {
 
 pub struct ErrorWithSource<'a> {
     pub error: &'a Error,
-    pub source: Source,
+    pub source: &'a Source,
 }
 
 impl<'a> std::fmt::Display for ErrorWithSource<'a> {

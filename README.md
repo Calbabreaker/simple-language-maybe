@@ -47,7 +47,7 @@ print (
 Define functions using `func` and set it as a variable:
 
 ```slm
-say_hello = func user (
+say_hello = func arg1 agr2 (
 
 )
 ```
