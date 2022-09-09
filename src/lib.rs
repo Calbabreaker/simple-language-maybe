@@ -12,3 +12,10 @@ pub struct Source {
     pub code: String,
     pub file: String,
 }
+
+impl Source {
+    pub fn from_file(file: String) -> std::io::Result<Self> {
+        let code = std::fs::read_to_string(&file)?;
+        Ok(Source { code, file })
+    }
+}

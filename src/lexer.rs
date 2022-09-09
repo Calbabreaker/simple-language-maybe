@@ -91,7 +91,7 @@ impl<'a> Lexer<'a> {
                         break;
                     } else if char == '\n' || char == '\0' {
                         self.token_length -= 1;
-                        Err(ErrorKind::Unmatched("quotes"))?
+                        Err(ErrorKind::Unmatched("quote"))?
                     };
                 }
 
