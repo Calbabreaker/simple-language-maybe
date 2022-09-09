@@ -1,6 +1,6 @@
 use crate::Source;
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy)]
 pub struct Position {
     pub line: usize,
     pub columns: (usize, usize),
@@ -19,6 +19,8 @@ impl Position {
 pub enum ErrorKind {
     #[error("SyntaxError: Invalid token")]
     InvalidToken,
+    #[error("SyntaxError: Unmatched {0}")]
+    Unmatched(&'static str),
     #[error("NameError: '{0}' is not defined")]
     NameError(String),
 }

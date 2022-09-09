@@ -1,6 +1,6 @@
 fn main() {
     let source = slm::Source {
-        code: "hello = 2 #* Hello \n no # no".into(),
+        code: "hello = 2 #* Hello *# \n myvar = \"Hello There\"".into(),
         file: "<stdin>".into(),
     };
 
