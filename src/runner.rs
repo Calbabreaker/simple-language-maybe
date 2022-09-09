@@ -14,7 +14,7 @@ impl Runner {
     /// Trying running the source returning a result type with the error when there is one
     pub fn try_run(&mut self, source: &Source) -> crate::Result<()> {
         let lexer = Lexer::parse(&source.code)?;
-        println!("{lexer:?}");
+        println!("{:?}", lexer.tokens);
         Ok(())
     }
 }

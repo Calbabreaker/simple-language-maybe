@@ -1,5 +1,6 @@
 mod error;
 mod lexer;
+mod parser;
 mod runner;
 
 pub use error::{Error, ErrorKind, Position, Result};

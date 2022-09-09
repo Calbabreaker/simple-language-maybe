@@ -14,10 +14,11 @@ Comments can be declared with `#` where `#` will comment out all the text until 
 *#
 ```
 
-Variables are created using `=`:
+Variables are created using `=` or `:=` for constants:
 
 ```slm
 variable = "hello"
+gravity := 9.1
 ```
 
 The seperator for each statement is a linebreak. Use `~` if multiple statement are need on one line with each side of the `~` needing to be a statement:
@@ -26,12 +27,12 @@ The seperator for each statement is a linebreak. Use `~` if multiple statement a
 var1 = "yes" ~ var2 = "no"
 ```
 
-Functions are called with arguments being seperated by spaces:
+Functions are called with arguments being seperated by spaces or a seperator:
 
 ```slm
-print "Hello World" variable
-# This is invalid
-print"Hello World"
+print "Hello World" variable variable2
+# Or:
+print"Hello World"variable variable2
 ```
 
 `()` can be used to execute code where the value of the last statement will be returned (or returned with `return`). This can be multiline:

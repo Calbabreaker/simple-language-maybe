@@ -1,8 +1,5 @@
 use crate::{Error, ErrorKind, Position};
-use std::{
-    iter::{Enumerate, Peekable},
-    str::Chars,
-};
+use std::{iter::Peekable, str::Chars};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Token<'a> {
@@ -12,125 +9,138 @@ pub enum Token<'a> {
     String(&'a str),
     True,
     False,
-    Func,
+    Function,
     Equal,
-    Space,
+    ConstantEqual,
+    Ignore,
     LineBreak,
     OpenBracket,
     CloseBracket,
     EOF,
 }
 
-#[derive(Debug)]
 pub struct Lexer<'a> {
     pub tokens: Vec<(Token<'a>, Position)>,
+    chars: Peekable<Chars<'a>>,
+    char_i: usize,
+    position: Position,
 }
 
 impl<'a> Lexer<'a> {
     pub fn parse(code: &'a str) -> crate::Result<Self> {
-        let mut tokens = Vec::new();
-        let mut line = 0;
-        let mut column = 0;
+        let mut lexer = Self {
+            tokens: Vec::new(),
+            chars: code.chars().peekable(),
+            position: Position::default(),
+            char_i: 0,
+        };
 
-        let mut chars = code.chars().enumerate().peekable();
-        while let Some((i, char)) = chars.next() {
-            let mut token_length = 1;
-            let mut position = Position::new(line, (column, column));
-
-            macro_rules! skip_char {
-                () => {
-                    chars.next();
-                    token_length += 1;
-                    position.columns.1 += 1;
-                };
-            }
-
-            let token = match char {
-                '=' => Token::Equal,
-                '\n' => {
-                    line += 1;
-                    column = 0;
-                    Token::LineBreak
-                }
-                '(' => Token::OpenBracket,
-                ')' => Token::CloseBracket,
-                '#' => {
-                    if peek_char(&mut chars) == '*' {
-                        skip_char!();
-                        while peek_test(&mut chars, |char| char != '*')
-                            && next_char(&mut chars) != '#'
-                        {
-                            skip_char!();
-                        }
-                    } else {
-                        while peek_test(&mut chars, |char| char != '\n') {
-                            skip_char!();
-                        }
-                    }
-
-                    continue;
-                }
-                char if is_space(char) => {
-                    while is_space(peek_char(&mut chars)) {
-                        skip_char!();
-                    }
-
-                    Token::Space
-                }
-                char if char.is_alphabetic() => {
-                    while peek_char(&mut chars).is_alphabetic() {
-                        skip_char!();
-                    }
-
-                    match &code[i..i + token_length] {
-                        "true" => Token::True,
-                        "false" => Token::False,
-                        "func" => Token::Func,
-                        sub => Token::Identifier(sub),
+        loop {
+            match lexer.next_token(code) {
+                Err(err) => Err(Error::new(err, lexer.position))?,
+                Ok(Token::Ignore) => (),
+                Ok(token) => {
+                    lexer.tokens.push((token, lexer.position));
+                    if token == Token::EOF {
+                        break;
                     }
                 }
-                char if char.is_digit(10) => {
-                    let mut is_float = false;
-                    loop {
-                        let char = peek_char(&mut chars);
-                        if char == '.' && !is_float {
-                            is_float = true;
-                        } else if !char.is_digit(10) {
-                            break;
-                        }
-                        skip_char!();
-                    }
-
-                    let sub = &code[i..i + token_length];
-                    if is_float {
-                        Token::Float(sub.parse().unwrap())
-                    } else {
-                        Token::Integer(sub.parse().unwrap())
-                    }
-                }
-                _ => Err(Error::new(ErrorKind::InvalidToken, position))?,
             };
 
-            tokens.push((token, position));
-            column += token_length;
+            let start_col = lexer.position.columns.1 + 1;
+            lexer.position.columns = (start_col, start_col);
         }
 
-        Ok(Self { tokens })
+        Ok(lexer)
     }
-}
 
-type CharsIter<'a> = Peekable<Enumerate<Chars<'a>>>;
+    fn next_token<'b>(&mut self, code: &'b str) -> Result<Token<'b>, ErrorKind> {
+        let char = self.next_char();
+        let token = match char {
+            '=' => Token::Equal,
+            '\n' => {
+                self.position.line += 1;
+                self.position.columns = (0, 0);
+                Token::LineBreak
+            }
+            '(' => Token::OpenBracket,
+            ')' => Token::CloseBracket,
+            char if char == ':' && self.next_char() == ':' => Token::ConstantEqual,
+            char if is_space(char) => Token::Ignore,
+            '#' => {
+                if self.peek_char() == '*' {
+                    // Is multiline comment
+                    self.next_char();
+                    while self.next_check(|c| c == '*') || self.next_check(|c| c != '#') {}
+                } else {
+                    while self.peek_check(|c| c != '#') {
+                        self.next_char();
+                    }
+                }
+                Token::Ignore
+            }
+            char if char.is_alphabetic() => {
+                while self.peek_char().is_alphabetic() {
+                    self.next_char();
+                }
 
-fn peek_char(chars: &mut CharsIter) -> char {
-    chars.peek().unwrap_or(&(0, '\0')).1
-}
+                match self.get_substr(&code) {
+                    "true" => Token::True,
+                    "false" => Token::False,
+                    "func" => Token::Function,
+                    sub => Token::Identifier(sub),
+                }
+            }
+            char if char.is_digit(10) => {
+                let mut is_float = false;
+                loop {
+                    let char = self.peek_char();
+                    if char == '.' && !is_float {
+                        is_float = true;
+                    } else if !char.is_digit(10) {
+                        break;
+                    }
+                    self.next_char();
+                }
 
-fn peek_test(chars: &mut CharsIter, test_func: fn(char) -> bool) -> bool {
-    chars.peek().map_or(false, |(_, char)| test_func(*char))
-}
+                let sub = self.get_substr(code);
+                if is_float {
+                    Token::Float(sub.parse().unwrap())
+                } else {
+                    Token::Integer(sub.parse().unwrap())
+                }
+            }
+            '\0' => Token::EOF,
+            _ => Err(ErrorKind::InvalidToken)?,
+        };
 
-fn next_char(chars: &mut CharsIter) -> char {
-    chars.next().unwrap_or((0, '\0')).1
+        Ok(token)
+    }
+
+    fn next_char(&mut self) -> char {
+        self.position.columns.1 += 1;
+        self.char_i += 1;
+        self.chars.next().unwrap_or('\0')
+    }
+
+    fn next_check(&mut self, check_func: fn(char) -> bool) -> bool {
+        let char = self.next_char();
+        char != '\0' && check_func(char)
+    }
+
+    fn peek_char(&mut self) -> char {
+        *self.chars.peek().unwrap_or(&'\0')
+    }
+
+    fn peek_check(&mut self, check_func: fn(char) -> bool) -> bool {
+        self.chars.peek().copied().map_or(false, check_func)
+    }
+
+    fn get_substr<'b>(&self, code: &'b str) -> &'b str {
+        let (start_col, end_col) = self.position.columns;
+        let token_length = end_col - start_col;
+        &code[self.char_i - token_length..self.char_i]
+    }
 }
 
 fn is_space(char: char) -> bool {
