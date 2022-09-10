@@ -14,8 +14,9 @@ pub struct Source {
 }
 
 impl Source {
-    pub fn from_file(file: String) -> std::io::Result<Self> {
-        let code = std::fs::read_to_string(&file)?;
-        Ok(Source { code, file })
+    pub fn from_file(file: &String) -> std::io::Result<Self> {
+        let path = std::fs::canonicalize(file)?.to_string_lossy().into();
+        let code = std::fs::read_to_string(&path)?;
+        Ok(Source { code, file: path })
     }
 }

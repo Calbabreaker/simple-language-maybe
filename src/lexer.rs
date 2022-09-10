@@ -78,8 +78,13 @@ impl<'a> Lexer<'a> {
                     self.next_char();
                     while self.next_check(|c| c != '*') || self.next_check(|c| c != '#') {}
                 } else {
-                    while self.peek_check(|c| c != '#') {
-                        self.next_char();
+                    loop {
+                        let char = self.peek_char();
+                        if char == '\n' || char == '\0' {
+                            break;
+                        } else {
+                            self.next_char();
+                        }
                     }
                 }
                 Token::Ignore
@@ -156,10 +161,6 @@ impl<'a> Lexer<'a> {
 
     fn peek_char(&mut self) -> char {
         *self.chars.peek().unwrap_or(&'\0')
-    }
-
-    fn peek_check(&mut self, check_func: fn(char) -> bool) -> bool {
-        self.chars.peek().copied().map_or(false, check_func)
     }
 
     fn get_substr<'b>(&self, code: &'b str, bounds_length: usize) -> &'b str {
