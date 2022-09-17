@@ -43,6 +43,8 @@ print (
     user = "Hello"
     get_password(user) # or return get_password(user)
 )
+# Required if doing math like this:
+print (1 + 2)
 ```
 
 Define functions using `func` and set it as a variable:

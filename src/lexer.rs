@@ -2,16 +2,26 @@ use crate::{Error, ErrorKind, Position};
 use std::{iter::Peekable, str::Chars};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Token<'a> {
-    Identifier(&'a str),
-    Integer(i64),
-    Float(f64),
-    String(&'a str),
-    True,
-    False,
-    Function,
+pub enum Operator {
     Equal,
     ConstantEqual,
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum Literal<'a> {
+    True,
+    False,
+    Integer(u64),
+    Float(f64),
+    String(&'a str),
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum Token<'a> {
+    Identifier(&'a str),
+    Operator(Operator),
+    Literal(Literal<'a>),
+    Func,
     Ignore,
     LineBreak,
     OpenBracket,
@@ -67,8 +77,8 @@ impl<'a> Lexer<'a> {
         self.token_length = 0;
         let char = self.next_char();
         let token = match char {
-            '=' => Token::Equal,
-            _ if char == ':' && self.next_char() == '=' => Token::ConstantEqual,
+            '=' => Token::Operator(Operator::Equal),
+            _ if char == ':' && self.next_char() == '=' => Token::Operator(Operator::ConstantEqual),
             '\n' => Token::LineBreak,
             '(' => Token::OpenBracket,
             ')' => Token::CloseBracket,
@@ -100,7 +110,7 @@ impl<'a> Lexer<'a> {
                     };
                 }
 
-                Token::String(self.get_substr(code, 1))
+                Token::Literal(Literal::String(self.get_substr(code, 1)))
             }
             _ if char.is_alphabetic() => {
                 while self.peek_char().is_alphabetic() {
@@ -108,9 +118,9 @@ impl<'a> Lexer<'a> {
                 }
 
                 match self.get_substr(code, 0) {
-                    "true" => Token::True,
-                    "false" => Token::False,
-                    "func" => Token::Function,
+                    "true" => Token::Literal(Literal::True),
+                    "false" => Token::Literal(Literal::False),
+                    "func" => Token::Func,
                     sub => Token::Identifier(sub),
                 }
             }
@@ -128,9 +138,9 @@ impl<'a> Lexer<'a> {
 
                 let sub = self.get_substr(code, 0);
                 if is_float {
-                    Token::Float(sub.parse().unwrap())
+                    Token::Literal(Literal::Float(sub.parse().unwrap()))
                 } else {
-                    Token::Integer(sub.parse().unwrap())
+                    Token::Literal(Literal::Integer(sub.parse().unwrap()))
                 }
             }
             _ if is_space(char) => Token::Ignore,
@@ -150,7 +160,7 @@ impl<'a> Lexer<'a> {
     fn position(&self) -> Position {
         Position {
             line: self.line,
-            columns: (self.column, self.column + self.token_length - 1),
+            columns: (self.column, self.column + self.token_length),
         }
     }
 

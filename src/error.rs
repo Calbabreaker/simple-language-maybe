@@ -1,6 +1,6 @@
 use crate::Source;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Position {
     pub line: usize,
     pub columns: (usize, usize),
@@ -19,6 +19,8 @@ impl Position {
 pub enum ErrorKind {
     #[error("SyntaxError: Invalid token")]
     InvalidToken,
+    #[error("SyntaxError: Expected {0}")]
+    ExpectedToken(String),
     #[error("SyntaxError: Unmatched {0}")]
     Unmatched(&'static str),
     #[error("NameError: '{0}' is not defined")]
@@ -65,12 +67,6 @@ impl<'a> std::fmt::Display for ErrorWithSource<'a> {
         writeln!(f, "{0}", line_code)?;
 
         // Show where the error is in the snippet
-        write!(
-            f,
-            "{0: <1$}{0:^<2$}",
-            "",
-            start_col,
-            end_col - start_col + 1
-        )
+        write!(f, "{0: <1$}{0:^<2$}", "", start_col, end_col - start_col)
     }
 }
