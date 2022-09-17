@@ -5,6 +5,7 @@ use std::{iter::Peekable, str::Chars};
 pub enum Operator {
     Equal,
     ConstantEqual,
+    Plus,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]

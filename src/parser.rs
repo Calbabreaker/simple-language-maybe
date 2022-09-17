@@ -45,31 +45,32 @@ impl<'a> Parser<'a> {
             position: Position::default(),
         };
 
-        let expr = parser
-            .expr_line()
-            .map_err(|kind| Error::new(kind, parser.position))?;
-        parser.tree.push(expr);
+        while parser.peek_token() != Token::EOF {
+            let expr = parser
+                .expr_line()
+                .map_err(|kind| Error::new(kind, parser.position))?;
+
+            if parser.next_token() != Token::LineBreak {
+                Err(Error::new(
+                    ErrorKind::ExpectedToken("new line".to_string()),
+                    parser.position,
+                ))?
+            }
+
+            parser.tree.push(expr);
+        }
 
         Ok(parser)
     }
 
     fn expr_line(&mut self) -> Result<Expr<'a>, ErrorKind> {
         let lexpr = self.expr()?;
-        let lpos = lexpr.position;
 
         let expr = match self.next_token() {
-            Token::Operator(Operator::Equal) => {
-                let rexpr = self.expr()?;
-                let rpos = rexpr.position;
-                Expr {
-                    kind: Box::new(ExprKind::Assignment {
-                        operator: Operator::Equal,
-                        left: lexpr,
-                        right: rexpr,
-                    }),
-                    position: Position::new(lpos.line, (lpos.columns.0, rpos.columns.1)),
-                }
-            }
+            Token::Operator(operator) => match operator {
+                Operator::Equal | Operator::ConstantEqual => self.assignment(lexpr, operator)?,
+                Operator::Plus => unimplemented!(),
+            },
             _ => unimplemented!(),
         };
 
@@ -89,15 +90,18 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn assignment(&mut self, left: Expr<'a>) -> Result<ExprKind<'a>, ErrorKind> {
-        match self.next_token() {
-            Token::Operator(operator) => Ok(ExprKind::Assignment {
+    fn assignment(&mut self, lexpr: Expr<'a>, operator: Operator) -> Result<Expr<'a>, ErrorKind> {
+        let rexpr = self.expr()?;
+        let rpos = rexpr.position;
+        let lpos = lexpr.position;
+        Ok(Expr {
+            kind: Box::new(ExprKind::Assignment {
                 operator,
-                left,
-                right: self.expr()?,
+                left: lexpr,
+                right: rexpr,
             }),
-            _ => Err(ErrorKind::ExpectedToken("operator".into())),
-        }
+            position: Position::new(lpos.line, (lpos.columns.0, rpos.columns.1)),
+        })
     }
 
     fn next_token(&mut self) -> Token<'a> {

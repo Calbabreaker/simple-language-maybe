@@ -1,4 +1,4 @@
-use crate::{Lexer, Parser};
+use crate::{Intepreter, Lexer, Parser};
 
 #[derive(Debug)]
 pub struct Source {
@@ -30,7 +30,10 @@ impl Runner {
         let lexer = Lexer::parse(&source.code)?;
         println!("Tokens: {:?}\n", lexer.tokens);
         let parser = Parser::parse(&lexer)?;
-        println!("{:?}", parser.tree);
+        println!("{:?}\n", parser.tree);
+        let mut interpreter = Intepreter::default();
+        interpreter.run(&parser)?;
+        println!("{:?}\n", interpreter.variables);
         Ok(())
     }
 }

@@ -25,6 +25,10 @@ pub enum ErrorKind {
     Unmatched(&'static str),
     #[error("NameError: '{0}' is not defined")]
     NameError(String),
+    #[error("SyntaxError: Cannot assign to a rvalue")]
+    RValueAssign,
+    #[error("TypeError: Cannot assign to a constant")]
+    ConstantAssign,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
