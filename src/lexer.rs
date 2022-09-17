@@ -1,7 +1,7 @@
 use crate::{Error, ErrorKind, Position};
 use std::{iter::Peekable, str::Chars};
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Operator {
     Equal,
     ConstantEqual,
@@ -27,6 +27,7 @@ pub enum Token<'a> {
     LineBreak,
     OpenBracket,
     CloseBracket,
+    Dot,
     EOF,
 }
 
@@ -83,6 +84,7 @@ impl<'a> Lexer<'a> {
             '\n' => Token::LineBreak,
             '(' => Token::OpenBracket,
             ')' => Token::CloseBracket,
+            '.' => Token::Dot,
             '#' => {
                 if self.peek_char() == '*' {
                     // Is multiline comment
@@ -113,8 +115,8 @@ impl<'a> Lexer<'a> {
 
                 Token::Literal(Literal::String(self.get_substr(code, 1)))
             }
-            _ if char.is_alphabetic() => {
-                while self.peek_char().is_alphabetic() {
+            _ if is_valid_namer(char) => {
+                while is_valid_namer(self.peek_char()) {
                     self.next_char();
                 }
 
@@ -125,13 +127,13 @@ impl<'a> Lexer<'a> {
                     sub => Token::Identifier(sub),
                 }
             }
-            _ if char.is_digit(10) => {
+            _ if char.is_ascii_digit() => {
                 let mut is_float = false;
                 loop {
                     let char = self.peek_char();
                     if char == '.' && !is_float {
                         is_float = true;
-                    } else if !char.is_digit(10) {
+                    } else if !char.is_ascii_digit() {
                         break;
                     }
                     self.next_char();
@@ -181,4 +183,8 @@ impl<'a> Lexer<'a> {
 
 fn is_space(char: char) -> bool {
     char.is_whitespace() && char != '\n'
+}
+
+fn is_valid_namer(char: char) -> bool {
+    char.is_alphabetic() || char == '_'
 }

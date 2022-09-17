@@ -46,6 +46,11 @@ impl<'a> Parser<'a> {
         };
 
         while parser.peek_token() != Token::EOF {
+            if parser.peek_token() == Token::LineBreak {
+                parser.next_token();
+                continue;
+            }
+
             let expr = parser
                 .expr_line()
                 .map_err(|kind| Error::new(kind, parser.position))?;
@@ -69,7 +74,7 @@ impl<'a> Parser<'a> {
         let expr = match self.next_token() {
             Token::Operator(operator) => match operator {
                 Operator::Equal | Operator::ConstantEqual => self.assignment(lexpr, operator)?,
-                Operator::Plus => unimplemented!(),
+                _ => unimplemented!(),
             },
             _ => unimplemented!(),
         };

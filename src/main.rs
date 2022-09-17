@@ -1,6 +1,6 @@
 fn main() {
     let mut args = std::env::args();
-    let file = args.nth(1).unwrap_or("".into());
+    let file = args.nth(1).unwrap_or_else(|| "".into());
     match slm::Source::from_file(&file) {
         Ok(source) => {
             let mut runner = slm::Runner::default();

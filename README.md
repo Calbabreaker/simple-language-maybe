@@ -1,5 +1,13 @@
 # Simple Language Maybe
 
+## Running
+
+Run like this where the first argument would be the file to a slm script:
+
+```sh
+cargo run -r hello.slm
+```
+
 ## Specification
 
 ### Syntax

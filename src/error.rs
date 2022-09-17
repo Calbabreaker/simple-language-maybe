@@ -15,7 +15,7 @@ impl Position {
     }
 }
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(thiserror::Error, Debug, PartialEq, Eq)]
 pub enum ErrorKind {
     #[error("SyntaxError: Invalid token")]
     InvalidToken,
